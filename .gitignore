@@ -1,0 +1,5 @@
+.firebaserc
+hosting/node_modules/
+firebase-debug.log
+hosting/yarn.lock
+*.cache

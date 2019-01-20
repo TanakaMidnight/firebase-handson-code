@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Firebase HandsOn</title>
+    <link
+      rel="icon"
+      type="image/vnd.microsoft.icon"
+      href="images/favicon.ico"
+    />
+    <link
+      href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900|Material+Icons"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/vuetify/dist/vuetify.min.css"
+      rel="stylesheet"
+    />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui"
+    />
+  </head>
+  <body>
+    <div id="app">
+      <v-app>
+        <v-toolbar>
+          <v-toolbar-title>Firebase HandsOn</v-toolbar-title>
+          <v-spacer></v-spacer>
+          <v-btn icon @click="isShowFilter = true">
+            <v-icon>filter_list</v-icon>
+          </v-btn>
+        </v-toolbar>
+        <v-content v-if="noData">
+          <v-layout row justify-space-around>
+            <v-flex xs6>
+              <v-card>
+                <v-card-title>データがありません。</v-card-title>
+                <v-card-actions>
+                  <v-btn @click="clickCreateMockData">
+                    モックデータの作成
+                  </v-btn>
+                </v-card-actions>
+              </v-card>
+            </v-flex>
+          </v-layout>
+        </v-content>
+        <v-content v-else>
+          <v-container fluid grid-list-lg v-if="!loading">
+            <v-layout row wrap>
+              <v-flex
+                xs12
+                sm6
+                md4
+                v-for="restaurant in restaurants"
+                :key="restaurant.id"
+              >
+                <v-card @click="clickShowDetail(restaurant.id)">
+                  <v-img
+                    class="white--text"
+                    height="200px"
+                    :src="restaurant.photo"
+                  >
+                    <v-container fill-height fluid>
+                      <v-layout fill-height align-end>
+                        <v-flex xs12 flexbox>
+                          <span
+                            class="headline"
+                            style="color: whitesmoke !important;text-shadow: 2px 2px 2px rgba(30,30,30,1) !important;"
+                          >
+                            {{ restaurant.name }}
+                          </span>
+                        </v-flex>
+                      </v-layout>
+                    </v-container>
+                  </v-img>
+                  <v-card-title>
+                    <v-layout row wrap>
+                      <v-flex xs9>
+                        <span
+                          >{{ restaurant.city }} /
+                          {{ restaurant.category }}</span
+                        >
+                      </v-flex>
+                      <v-flex xs3>
+                        <span v-for="item in restaurant.price"> ¥ </span>
+                      </v-flex>
+                      <v-flex xs12> <v-divider light></v-divider> </v-flex>
+                      <v-flex xs12>
+                        <v-icon
+                          color="yellow darken-1"
+                          v-for="item in parseInt(restaurant.avgRating,10)"
+                          :key="item.index"
+                          >star</v-icon
+                        >
+                        <v-icon
+                          color="yellow darken-1"
+                          v-for="item in 5-parseInt(restaurant.avgRating,10)"
+                          :key="item.index"
+                          >star_border</v-icon
+                        >
+                      </v-flex>
+                    </v-layout>
+                  </v-card-title>
+                </v-card>
+              </v-flex>
+            </v-layout>
+          </v-container>
+        </v-content>
+
+        <v-dialog v-model="loading" hide-overlay persistent width="300">
+          <v-card color="primary" dark>
+            <v-card-text>
+              Please stand by
+              <v-progress-linear indeterminate color="white" class="mb-0">
+              </v-progress-linear>
+            </v-card-text>
+          </v-card>
+        </v-dialog>
+
+        <v-dialog v-model="isShowDetail" hide-overlay fullscreen>
+          <v-card>
+            <v-toolbar dark color="primary">
+              <v-btn icon dark @click="isShowDetail = false">
+                <v-icon>close</v-icon>
+              </v-btn>
+              <v-toolbar-title>{{ detail.name }}</v-toolbar-title>
+            </v-toolbar>
+            <v-spacer></v-spacer>
+            <v-card>
+              <v-img class="white--text" height="200px" :src="detail.photo">
+              </v-img>
+              <v-card-title>
+                <v-layout row wrap>
+                  <v-flex xs9>
+                    <span>{{ detail.city }} / {{ detail.category }}</span>
+                  </v-flex>
+                  <v-flex xs3>
+                    <span v-for="item in detail.price"> ¥ </span>
+                  </v-flex>
+                  <v-flex xs12>
+                    <v-icon
+                      color="yellow darken-1"
+                      v-for="item in parseInt(detail.avgRating,10)"
+                      :key="item.index"
+                      >star</v-icon
+                    >
+                    <v-icon
+                      color="yellow darken-1"
+                      v-for="item in 5-parseInt(detail.avgRating,10)"
+                      :key="item.index"
+                      >star_border</v-icon
+                    >
+                  </v-flex>
+                </v-layout>
+              </v-card-title>
+              <v-fab-transition>
+                <v-btn
+                  color="red"
+                  dark
+                  absolute
+                  bottom
+                  right
+                  fab
+                  @click="clickShowAddRating"
+                >
+                  <v-icon>add</v-icon>
+                </v-btn>
+              </v-fab-transition>
+            </v-card>
+            <v-spacer></v-spacer>
+
+            <v-list three-line subheader>
+              <v-subheader>Ratings</v-subheader>
+              <v-list-tile avatar v-for="rating in ratings" :key="rating.index">
+                <v-list-tile-content>
+                  <v-list-tile-title>
+                    <v-icon
+                      color="yellow darken-1"
+                      v-for="item in parseInt(rating.rating,10)"
+                      :key="item.index"
+                      >star</v-icon
+                    >
+                    <v-icon
+                      color="yellow darken-1"
+                      v-for="item in 5-parseInt(rating.rating,10)"
+                      :key="item.index"
+                      >star_border</v-icon
+                    >
+                  </v-list-tile-title>
+                  <v-list-tile-sub-title>{{
+                    rating.comment
+                  }}</v-list-tile-sub-title>
+                </v-list-tile-content>
+              </v-list-tile>
+            </v-list>
+          </v-card>
+        </v-dialog>
+
+        <v-dialog v-model="isShowAddRating" persistent max-width="600px">
+          <v-card>
+            <v-card-title>
+              <span class="headline">評価を追加</span>
+            </v-card-title>
+            <v-card-text>
+              <v-container grid-list-md>
+                <v-layout wrap>
+                  <v-flex xs12>
+                    <v-subheader class="pl-0">評価</v-subheader>
+                    <v-slider
+                      v-model="rating.rating"
+                      thumb-label="always"
+                      min="0"
+                      max="5"
+                    ></v-slider>
+                  </v-flex>
+                  <v-flex xs12>
+                    <v-textarea
+                      v-model="rating.comment"
+                      name="input-7-1"
+                      label="コメント"
+                      value=""
+                    ></v-textarea>
+                  </v-flex>
+                </v-layout>
+              </v-container>
+            </v-card-text>
+            <v-card-actions>
+              <v-spacer></v-spacer>
+              <v-btn color="blue darken-1" flat @click="isShowAddRating = false"
+                >Close</v-btn
+              >
+              <v-btn color="blue darken-1" flat @click="clickSaveRating"
+                >Save</v-btn
+              >
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
+
+        <v-dialog v-model="isShowFilter" persistent>
+          <v-card>
+            <v-card-title>
+              <span class="headline">並び替え & 条件追加</span>
+            </v-card-title>
+            <v-card-text>
+              <v-container grid-list-md>
+                <v-layout wrap>
+                  <v-flex xs12>
+                    <v-subheader class="pl-0">並び替え</v-subheader>
+                    <v-select
+                      v-model="filters.sort"
+                      :items="constRestaurant.sorts"
+                      item-text="name"
+                      item-value="id"
+                      box
+                    ></v-select>
+                  </v-flex>
+                  <v-flex xs12>
+                    <v-subheader class="pl-0">条件追加</v-subheader>
+                    <v-select
+                      v-model="filters.category"
+                      :items="['', ...constRestaurant.categories]"
+                      box
+                      label="カテゴリ"
+                    ></v-select>
+                    <v-select
+                      v-model="filters.city"
+                      :items="['', ...constRestaurant.cities]"
+                      box
+                      label="地域"
+                    ></v-select>
+                    <v-select
+                      v-model="filters.price"
+                      :items="['',...constRestaurant.prices]"
+                      box
+                      label="値段"
+                    ></v-select>
+                  </v-flex>
+                </v-layout>
+              </v-container>
+            </v-card-text>
+            <v-card-actions>
+              <v-spacer></v-spacer>
+              <v-btn color="blue darken-1" flat @click="isShowFilter = false"
+                >Close</v-btn
+              >
+              <v-btn color="blue darken-1" flat @click="clickFilter"
+                >Accept</v-btn
+              >
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
+
+        <v-footer class="pa-3">
+          <v-spacer></v-spacer>
+          <div>&copy; {{ new Date().getFullYear() }} Firebase HandsOn</div>
+        </v-footer>
+      </v-app>
+    </div>
+    <script src="/__/firebase/5.7.3/firebase-app.js"></script>
+    <script src="/__/firebase/5.7.3/firebase-auth.js"></script>
+    <script src="/__/firebase/5.7.3/firebase-firestore.js"></script>
+    <script src="/__/firebase/init.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify/dist/vuetify.js"></script>
+    <script type="module" src="scripts/const.js"></script>
+    <script type="module" src="scripts/models.js"></script>
+    <script type="module" src="scripts/main.js"></script>
+  </body>
+</html>
